@@ -41,3 +41,6 @@ TABLESPACE pg_default;
 
 ALTER TABLE public.RacingTrack
     OWNER to postgres;
+    
+    
+CREATE SEQUENCE racingtrackid START 1;
