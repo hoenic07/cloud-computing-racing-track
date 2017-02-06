@@ -7,7 +7,7 @@ info:
   title: "Racing Track Recorder"
   contact:
     name: "jan.brunner.at@gmail.com"
-host: "...heroku.com"
+host: "racing-track-api.herokuapp.com"
 paths:
   /racingTracks:
     get:

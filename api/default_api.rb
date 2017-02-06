@@ -19,6 +19,11 @@ rescue PG::Error => e
   puts e.message
 end
 
+MyApp.add_route("GET", "/swagger") do
+  cross_origin
+  File.read(File.join('static','swagger.json'))
+end
+
 MyApp.add_route('POST', '/racingTracks', {
     "resourcePath" => "/Default",
     "summary" => "",

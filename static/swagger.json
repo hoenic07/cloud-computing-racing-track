@@ -1,0 +1,300 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a simple API for recording racing tracks for the ILV Cloud Computing (MC503)\n",
+        "version": "1.0.0",
+        "title": "Racing Track Recorder",
+        "contact": {
+            "name": "jan.brunner.at@gmail.com"
+        }
+    },
+    "host": "racing-track-api.herokuapp.com",
+    "paths": {
+        "/racingTracks": {
+            "get": {
+                "description": "Returns all finalized racing tracks from the system",
+                "operationId": "findRacingTrack",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Racing track response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/racingTrack"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected internal error",
+                        "schema": {
+                            "$ref": "#/definitions/errorModel"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new racing track with a given namen and returns the racing track object which id is needed to update and finalize the racing track. Optionally position can be initally be added and the track can also be finalized. The ID of the racing track is server side generated.",
+                "operationId": "createRacingTrack",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "racing track body",
+                        "description": "body in form of a racing track",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/racingTrack"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Racing track response",
+                        "schema": {
+                            "$ref": "#/definitions/racingTrack"
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected internal error",
+                        "schema": {
+                            "$ref": "#/definitions/errorModel"
+                        }
+                    }
+                }
+            }
+        },
+        "/racingTracks/{id}": {
+            "get": {
+                "description": "Returns a racing track based on a single ID",
+                "operationId": "findRacingTrackById",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of racing track to fetch",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Racing track response",
+                        "schema": {
+                            "$ref": "#/definitions/racingTrack"
+                        }
+                    },
+                    "400": {
+                        "description": "ID not valid",
+                        "schema": {
+                            "$ref": "#/definitions/errorModel"
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected internal error",
+                        "schema": {
+                            "$ref": "#/definitions/errorModel"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a single racing track based on the ID supplied",
+                "operationId": "deleteRacingTrack",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of racing track to delete",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Racing track deleted"
+                    },
+                    "400": {
+                        "description": "ID not valid",
+                        "schema": {
+                            "$ref": "#/definitions/errorModel"
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected internal error",
+                        "schema": {
+                            "$ref": "#/definitions/errorModel"
+                        }
+                    }
+                }
+            }
+        },
+        "/racingTracks/{id}/positions": {
+            "post": {
+                "description": "Creates and adds a postion of a racing track as long as it is not finalized based on the ID supplied",
+                "operationId": "updateRacingTrackPosition",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of racing track to update",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "position body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/position"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Postions response",
+                        "schema": {
+                            "$ref": "#/definitions/position"
+                        }
+                    },
+                    "400": {
+                        "description": "Parameter not valid",
+                        "schema": {
+                            "$ref": "#/definitions/errorModel"
+                        }
+                    },
+                    "403": {
+                        "description": "Racing track is already finalized",
+                        "schema": {
+                            "$ref": "#/definitions/errorModel"
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected internal error",
+                        "schema": {
+                            "$ref": "#/definitions/errorModel"
+                        }
+                    }
+                }
+            }
+        },
+        "/racingTracks/{id}/finalize": {
+            "post": {
+                "description": "Finalizes a racing track to prevent editing based on the ID supplied",
+                "operationId": "finalizeRacingTrack",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of racing track to update",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Racing track response",
+                        "schema": {
+                            "$ref": "#/definitions/racingTrack"
+                        }
+                    },
+                    "403": {
+                        "description": "Racing track is already finalized",
+                        "schema": {
+                            "$ref": "#/definitions/errorModel"
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected internal error",
+                        "schema": {
+                            "$ref": "#/definitions/errorModel"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "racingTrack": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "finalized": {
+                    "type": "boolean"
+                },
+                "positions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/position"
+                    }
+                }
+            }
+        },
+        "position": {
+            "type": "object",
+            "required": [
+                "lat",
+                "lng",
+                "timestamp"
+            ],
+            "properties": {
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "lat": {
+                    "type": "number",
+                    "format": "float"
+                },
+                "lng": {
+                    "type": "number",
+                    "format": "float"
+                }
+            }
+        },
+        "errorModel": {
+            "type": "object",
+            "required": [
+                "code",
+                "message"
+            ],
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
