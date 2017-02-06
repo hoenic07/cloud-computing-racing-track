@@ -2,8 +2,19 @@ require 'json'
 require 'pg'
 require 'date'
 
+is_production = true
+
 begin
-  conn=PGconn.connect(:hostaddr => "127.0.0.1", :port => 5432, :dbname => "postgres", :user => "postgres", :password => 'password')
+  if is_production
+    conn=PGconn.connect(
+      :host => "ec2-176-34-113-15.eu-west-1.compute.amazonaws.com", 
+      :port => 5432, 
+      :dbname => "dd3g9rn58i7rv5", 
+      :user => "ffrhqdydlknkrf", 
+      :password => '876c66600f776cb251b586235325011d81a38c791eab56e3a5556611996bb61a')
+  else
+    conn=PGconn.connect(:hostaddr => "127.0.0.1", :port => 5432, :dbname => "postgres", :user => "postgres", :password => 'password')
+  end
 rescue PG::Error => e
   puts e.message
 end
