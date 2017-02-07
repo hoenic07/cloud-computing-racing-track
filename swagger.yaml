@@ -49,6 +49,10 @@ paths:
           description: "Racing track response"
           schema:
             $ref: "#/definitions/racingTrack"
+        400:
+          description: "Parameter not valid"
+          schema:
+            $ref: "#/definitions/errorModel"
         500:
           description: "Unexpected internal error"
           schema:

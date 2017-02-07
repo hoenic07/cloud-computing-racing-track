@@ -49,12 +49,19 @@ MyApp.add_route('POST', '/racingTracks', {
   if finalized.nil? then
     finalized = false
   end
+  
+  if finalized == true || finalized == false then
+    id = conn.exec("SELECT nextval('racingtrackid')")[0]["nextval"]
+    res = conn.exec("INSERT INTO racingtrack(id, name, finalized) VALUES (#{id}, '#{name}', '#{finalized}')")
+  
+    status 201
+    getRacingTrackObj(conn, id)
+  elsif
+    sendError("400", "Parameter not valid")
+  end
+  
 
-  id = conn.exec("SELECT nextval('racingtrackid')")[0]["nextval"]
-  res = conn.exec("INSERT INTO racingtrack(id, name, finalized) VALUES (#{id}, '#{name}', '#{finalized}')")
-
-  status 201
-  getRacingTrackObj(conn, id)
+  
 end
 
 
