@@ -262,9 +262,5 @@ def sendError(code, message)
 end
 
 def sendInternalError
-  status 500
-  {"errorModel" => {
-      "code" => 500,
-      "message" => "Unexpected internal error"
-  }}.to_json
+  sendError("500", "Unexpected internal error")
 end
