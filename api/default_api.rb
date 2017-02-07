@@ -42,26 +42,28 @@ MyApp.add_route('POST', '/racingTracks', {
   cross_origin
 
   body = JSON.parse(request.body.read)
-  name = body["racingTrack"]["name"]
-  #other parameters like id are ignored for now
-  finalized = body["racingTrack"]["finalized"]
-  
-  if finalized.nil? then
-    finalized = false
-  end
-  
-  if finalized == true || finalized == false then
-    id = conn.exec("SELECT nextval('racingtrackid')")[0]["nextval"]
-    res = conn.exec("INSERT INTO racingtrack(id, name, finalized) VALUES (#{id}, '#{name}', '#{finalized}')")
-  
-    status 201
-    getRacingTrackObj(conn, id)
-  elsif
-    sendError("400", "Parameter not valid")
-  end
-  
 
-  
+  racingTrack = body["racingTrack"]
+
+  name = racingTrack["name"]
+  finalized = racingTrack["finalized"]
+
+  if name.is_a?(String) == false || name.nil? || name.empty? then
+    sendError("400", "Parameter not valid")
+  elsif if finalized.nil? then
+          finalized = false
+        end
+
+    if finalized == true || finalized == false then
+
+      id = conn.exec("SELECT nextval('racingtrackid')")[0]["nextval"]
+      res = conn.exec("INSERT INTO racingtrack(id, name, finalized) VALUES (#{id}, '#{name}', '#{finalized}')")
+
+      status 201
+      getRacingTrackObj(conn, id)
+    elsif sendError("400", "Parameter not valid")
+    end
+  end
 end
 
 
@@ -162,7 +164,9 @@ MyApp.add_route('GET', '/racingTracks', {
     result << getRacingTrackObj(conn, id)
     result << ", "
   }
-  result = result[0..-3]
+  if res.num_tuples > 0
+    result = result[0..-3]
+  end
   result << "]"
 
   result
@@ -211,37 +215,54 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', {
     ]}) do |id|
   cross_origin
 
-  body = JSON.parse(request.body.read)
+  begin
+    body = JSON.parse(request.body.read)
 
-  position = body["position"]
+    position = body["position"]
 
-  if position.nil? then
-    sendError("400", "Parameter not valid.")
-  else
-    latitude = position["latitude"]
-    longitude = position["longitude"]
-    timestamp = position["timestamp"]
-
-    res = conn.exec("SELECT finalized FROM racingtrack WHERE id =#{id}")
-
-    if res.num_tuples.zero? then
+    if position.nil? then
       sendError("400", "Parameter not valid.")
-    elsif res[0]["finalized"] == "t" then
-      sendError("403", "Racing track is already finalized.")
     else
-      res = conn.exec("INSERT INTO position(racingtrackid, timestamp, latitude, longitude) VALUES (#{id}, #{timestamp}, #{latitude}, #{longitude})")
+      latitude = position["lat"]
+      longitude = position["lng"]
+      timestamp = position["timestamp"]
 
-      if res.cmd_tuples == 0 then
+      if latitude.is_a?(Float) == false || longitude.is_a?(Float) == false ||
+          latitude < -90 && latitude > 90 || longitude < -180 || latitude > 180 ||
+          timestamp.is_a?(String) == false
+
         sendError("400", "Parameter not valid.")
       else
-        res = conn.exec("SELECT array_to_json(array_agg(json_build_object('timestamp', timestamp, 'latitude', latitude, 'longitude', longitude))) as position FROM position WHERE racingtrackid = #{id} AND timestamp = #{timestamp}")
+        res = conn.exec("SELECT finalized FROM racingtrack WHERE id =#{id}")
+
         if res.num_tuples.zero? then
-          sendInternalError
+          sendError("400", "Parameter not valid.")
+        elsif res[0]["finalized"] == "t" then
+          sendError("403", "Racing track is already finalized.")
         else
-          res[0].to_json
+
+          timestampVal = Time.parse(timestamp).to_i
+
+          res = conn.exec("INSERT INTO position(racingtrackid, timestamp, latitude, longitude) VALUES (#{id}, #{timestampVal}, #{latitude}, #{longitude})")
+
+          if res.cmd_tuples == 0 then
+            sendError("400", "Parameter not valid.")
+          else
+            res = conn.exec("SELECT array_to_json(array_agg(json_build_object('timestamp', timestamp, 'lat', latitude, 'lng', longitude))) as position FROM position WHERE racingtrackid = #{id} AND timestamp = #{timestampVal}")
+            if res.num_tuples.zero? then
+              sendInternalError
+            else
+              res[0].to_json
+            end
+          end
         end
       end
+
+
     end
+  rescue JSON::ParserError, ArgumentError, PG::Error => e
+    puts(e)
+    sendError("400", "Parameter not valid.")
   end
 end
 
