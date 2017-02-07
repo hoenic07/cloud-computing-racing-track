@@ -44,9 +44,14 @@ MyApp.add_route('POST', '/racingTracks', {
   body = JSON.parse(request.body.read)
   name = body["racingTrack"]["name"]
   #other parameters like id are ignored for now
+  finalized = body["racingTrack"]["finalized"]
+  
+  if finalized.nil? then
+    finalized = false
+  end
 
   id = conn.exec("SELECT nextval('racingtrackid')")[0]["nextval"]
-  res = conn.exec("INSERT INTO racingtrack(id, name, finalized) VALUES (#{id}, '#{name}', FALSE)")
+  res = conn.exec("INSERT INTO racingtrack(id, name, finalized) VALUES (#{id}, '#{name}', '#{finalized}')")
 
   status 201
   getRacingTrackObj(conn, id)
