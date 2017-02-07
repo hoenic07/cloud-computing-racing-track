@@ -141,7 +141,7 @@ MyApp.add_route('GET', '/racingTracks', {
     ]}) do
   cross_origin
 
-  res = conn.exec("SELECT id FROM racingtrack WHERE finalized = FALSE");
+  res = conn.exec("SELECT id FROM racingtrack WHERE finalized = TRUE");
 
   result = "["
 
