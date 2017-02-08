@@ -52,6 +52,7 @@ MyApp.add_route('POST', '/racingTracks', {
     else
       name = racingTrack["name"]
       finalized = racingTrack["finalized"]
+      positions = racingTrack["positions"]
       #other parameters are ignored
 
       if name.is_a?(String) == false || name.nil? || name.empty? then
@@ -66,6 +67,24 @@ MyApp.add_route('POST', '/racingTracks', {
             id = conn.exec("SELECT nextval('racingtrackid')")[0]["nextval"]
             res = conn.exec("INSERT INTO racingtrack(id, name, finalized) VALUES (#{id}, '#{name}', '#{finalized}')")
 
+            unless positions.nil?
+              for item in positions
+                latitude = item["latitude"]
+                longitude = item["longitude"]
+                timestamp = item["timestamp"]
+                
+                unless latitude.is_a?(Float) == false || longitude.is_a?(Float) == false ||
+                  latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180 ||
+                  timestamp.is_a?(Integer) == false || timestamp < 0
+                  begin
+                    res2 = conn.exec("INSERT INTO position(racingtrackid, timestamp, latitude, longitude) VALUES (#{id}, #{timestamp}, #{latitude}, #{longitude})")
+                  rescue
+                    puts "duplicate key (timestamp) - ignore in this case"
+                  end 
+                end
+              end
+            end
+            
             status 201
             getRacingTrackObj(conn, id).to_json
 
