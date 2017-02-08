@@ -46,7 +46,6 @@ MyApp.add_route('POST', '/racingTracks', {
     body = JSON.parse(request.body.read)
 
     racingTrack = body["racingTrack"]
-    puts racingTrack
 
     if racingTrack.nil? then
       sendError("400", "Parameter not valid")
@@ -175,7 +174,13 @@ MyApp.add_route('GET', '/racingTracks', {
   cross_origin
   content_type 'application/json'
 
-  res = conn.exec("SELECT id FROM racingtrack WHERE finalized = TRUE");
+  # return an error if the value is not true, false or nil
+  return sendError("400", "Invalid Parameter.") unless ['true','false',nil].include? params["finalized"]
+
+  # set to true if true or nil
+  finalized = ['true',nil].include? params["finalized"]
+
+  res = conn.exec("SELECT id FROM racingtrack WHERE finalized = #{finalized}");
   all_tracks = res.map {|tuple| getRacingTrackObj(conn,tuple["id"])}
   all_tracks.to_json
 end
