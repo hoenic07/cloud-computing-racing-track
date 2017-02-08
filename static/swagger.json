@@ -267,20 +267,20 @@
         "position": {
             "type": "object",
             "required": [
-                "lat",
-                "lng",
+                "latitude",
+                "longitude",
                 "timestamp"
             ],
             "properties": {
                 "timestamp": {
-                    "type": "string",
-                    "format": "date-time"
+                    "type": "integer",
+                    "format": "int64"
                 },
-                "lat": {
+                "latitude": {
                     "type": "number",
                     "format": "float"
                 },
-                "lng": {
+                "longitude": {
                     "type": "number",
                     "format": "float"
                 }

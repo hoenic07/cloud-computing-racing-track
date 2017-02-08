@@ -185,17 +185,17 @@ definitions:
   position:
     type: "object"
     required:
-    - "lat"
-    - "lng"
+    - "latitude"
+    - "longitude"
     - "timestamp"
     properties:
       timestamp:
-        type: "string"
-        format: "date-time"
-      lat:
+        type: "integer"
+        format: "int64"
+      latitude:
         type: "number"
         format: "float"
-      lng:
+      longitude:
         type: "number"
         format: "float"
   errorModel:

@@ -154,7 +154,7 @@ begin
         else
           racingtrack = racingTrackRes[0]
 
-          res = conn.exec("SELECT array_to_json(array_agg(json_build_object('timestamp', timestamp, 'lat', latitude, 'lng', longitude))) as positions FROM position WHERE racingtrackid =  #{id}")
+          res = conn.exec("SELECT array_to_json(array_agg(json_build_object('timestamp', timestamp, 'latitude', latitude, 'longitude', longitude))) as positions FROM position WHERE racingtrackid =  #{id}")
           racingtrack["positions"] = res[0]
 
           racingtrack.to_json
@@ -178,7 +178,7 @@ MyApp.add_route('GET', '/racingTracks', {
     ]}) do
   cross_origin
 
-  res = conn.exec("SELECT id FROM racingtrack WHERE finalized = FALSE");
+  res = conn.exec("SELECT id FROM racingtrack WHERE finalized = TRUE");
 
   result = "["
 
@@ -211,8 +211,12 @@ MyApp.add_route('GET', '/racingTracks/{id}', {
         },
     ]}) do |id|
   cross_origin
-
-  getRacingTrackObj(conn, id)
+  
+  if id.is_a? Integer && id >= 0 then
+    getRacingTrackObj(conn, id)
+  else
+    sendError("400", "ID not valid.")
+  end
 end
 
 MyApp.add_route('POST', '/racingTracks/{id}/positions', {
@@ -246,8 +250,8 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', {
     if position.nil? then
       sendError("400", "Parameter not valid.")
     else
-      latitude = position["lat"]
-      longitude = position["lng"]
+      latitude = position["latitude"]
+      longitude = position["longitude"]
       timestamp = position["timestamp"]
 
       #check values and ranges of lat, long and timestamp
@@ -269,7 +273,7 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', {
           if res.cmd_tuples == 0 then
             sendError("400", "Parameter not valid.")
           else
-            res = conn.exec("SELECT array_to_json(array_agg(json_build_object('timestamp', timestamp, 'lat', latitude, 'lng', longitude))) as position FROM position WHERE racingtrackid = #{id} AND timestamp = #{timestamp}")
+            res = conn.exec("SELECT array_to_json(array_agg(json_build_object('timestamp', timestamp, 'latitude', latitude, 'longitude', longitude))) as position FROM position WHERE racingtrackid = #{id} AND timestamp = #{timestamp}")
             if res.num_tuples.zero? then
               sendInternalError
             else
