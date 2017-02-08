@@ -45,7 +45,7 @@ paths:
       parameters:
       - in: "body"
         name: "racing track body"
-        description: "body in form of a racing track"
+        description: "body in form of a racing track. invalid positions in array will be ignored"
         required: true
         schema:
           $ref: "#/definitions/racingTrack"
