@@ -212,7 +212,8 @@ MyApp.add_route('GET', '/racingTracks/{id}', {
     ]}) do |id|
   cross_origin
   
-  if id.is_a? Integer && id >= 0 then
+    
+  if id >= 0 then
     getRacingTrackObj(conn, id)
   else
     sendError("400", "ID not valid.")
