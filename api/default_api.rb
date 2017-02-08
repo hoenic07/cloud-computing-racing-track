@@ -73,6 +73,8 @@ MyApp.add_route('POST', '/racingTracks', {
             puts(e)
             sendInternalError
           end
+        else
+          sendError("400", "Parameter not valid")
         end
       end
     end

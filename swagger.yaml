@@ -15,7 +15,12 @@ paths:
       operationId: "findRacingTrack"
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "finalized"
+        in: "query"
+        description: "optional filter for the finalized field. Default: true"
+        required: false
+        type: "boolean"
       responses:
         200:
           description: "Racing track response"
