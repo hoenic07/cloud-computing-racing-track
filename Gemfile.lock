@@ -17,6 +17,7 @@ PLATFORMS
 
 DEPENDENCIES
   pg
+  rack
   sinatra
   sinatra-cross_origin
 
