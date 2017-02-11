@@ -18,6 +18,7 @@ PLATFORMS
 
 DEPENDENCIES
   pg
+  rack
   redis (~> 3.2)
   sinatra
   sinatra-cross_origin

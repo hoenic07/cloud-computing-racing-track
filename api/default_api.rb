@@ -1,23 +1,8 @@
 require 'json'
-require 'pg'
 require 'date'
 
-is_production = true
-
-begin
-  if is_production
-    conn=PGconn.connect(
-      :host => "ec2-176-34-113-15.eu-west-1.compute.amazonaws.com", 
-      :port => 5432, 
-      :dbname => "dd3g9rn58i7rv5", 
-      :user => "ffrhqdydlknkrf", 
-      :password => '876c66600f776cb251b586235325011d81a38c791eab56e3a5556611996bb61a')
-  else
-    conn=PGconn.connect(:hostaddr => "127.0.0.1", :port => 5432, :dbname => "postgres", :user => "postgres", :password => 'password')
-  end
-rescue PG::Error => e
-  puts e.message
-end
+db_con = PostgresConnection.new(:heroku)
+db_con.connect
 
 MyApp.add_route("GET", "/swagger") do
   cross_origin
@@ -44,63 +29,22 @@ MyApp.add_route('POST', '/racingTracks', {
 
   begin
     body = JSON.parse(request.body.read)
-
-    racingTrack = body["racingTrack"]
-
-    if racingTrack.nil? then
-      sendError("400", "Parameter not valid")
-    else
-      name = racingTrack["name"]
-      finalized = racingTrack["finalized"]
-      positions = racingTrack["positions"]
-      #other parameters are ignored
-
-      if name.is_a?(String) == false || name.nil? || name.empty? then
-        sendError("400", "Parameter not valid")
-      else
-        if finalized.nil? then
-          finalized = false
-        end
-
-        if finalized == true || finalized == false then
-          begin
-            id = conn.exec("SELECT nextval('racingtrackid')")[0]["nextval"]
-            res = conn.exec("INSERT INTO racingtrack(id, name, finalized) VALUES (#{id}, '#{name}', '#{finalized}')")
-
-            unless positions.nil?
-              for item in positions
-                latitude = item["latitude"]
-                longitude = item["longitude"]
-                timestamp = item["timestamp"]
-                
-                unless latitude.is_a?(Float) == false || longitude.is_a?(Float) == false ||
-                  latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180 ||
-                  timestamp.is_a?(Integer) == false || timestamp < 0
-                  begin
-                    res2 = conn.exec("INSERT INTO position(racingtrackid, timestamp, latitude, longitude) VALUES (#{id}, #{timestamp}, #{latitude}, #{longitude})")
-                  rescue
-                    puts "duplicate key (timestamp) - ignore in this case"
-                  end 
-                end
-              end
-            end
-            
-            status 201
-            getRacingTrackObj(conn, id).to_json
-
-          rescue PG::Error => e
-            puts(e)
-            sendInternalError
-          end
-        else
-          sendError("400", "Parameter not valid")
-        end
-      end
-    end
   rescue JSON::ParserError, ArgumentError => e
     puts(e)
-    sendError("400", "Parameter not valid.")
+    return error(400, "Parameter not valid.")
   end
+  
+  racingTrack = body["racingTrack"]
+  return error(400,"Parameter not valid") unless racingtrack
+
+  name = racingTrack["name"]
+  finalized = racingTrack["finalized"] || false
+  positions = racingTrack["positions"] || []
+  #other parameters are ignored
+
+  return error(400, "Parameter not valid") if name.is_a?(String) == false || name.nil? || name.empty?
+  return error(400, "Parameter not valid") unless finalized == true || finalized == false
+  response(db_con.store_track(name, finalized, positions), 201)
 end
 
 
@@ -123,25 +67,9 @@ MyApp.add_route('DELETE', '/racingTracks/{id}', {
   content_type 'application/json'
  
   is_id_valid, int_id = validate_int(id)
-  return sendError("400", "Invalid ID.") unless is_id_valid
+  return error(400, "Invalid ID.") unless is_id_valid
 
-  begin
-    unless conn.nil?
-      res = conn.exec("DELETE FROM position WHERE racingtrackid = #{id}")
-      res = conn.exec("DELETE FROM racingtrack WHERE id = #{id}")
-
-      if res.nil? then
-        sendInternalError
-      elsif res.cmd_tuples == 0
-        sendError("400", "ID not valid")
-      else
-        status 204
-      end
-    end
-  rescue PG::Error => e
-    puts(e.message)
-    sendInternalError
-  end
+  response(db_con.delete_track(int_id),204)
 end
 
 MyApp.add_route('POST', '/racingTracks/{id}/finalize', {
@@ -162,25 +90,13 @@ MyApp.add_route('POST', '/racingTracks/{id}/finalize', {
   cross_origin
   content_type 'application/json'
 
-  begin
+  is_id_valid, int_id = validate_int(id)
+  return error(400, "Invalid ID.") unless is_id_valid
 
-    is_id_valid, int_id = validate_int(id)
-    return sendError("400", "Invalid ID.") unless is_id_valid
+  success, payload = db_con.get_track(int_id)
+  return error_pl(payload).to_json unless success
 
-    res = conn.exec("SELECT id FROM racingtrack WHERE id = #{int_id}")
-
-    if res.num_tuples == 0 then
-      sendError("400", "Invalid ID.")
-    else
-      res = conn.exec("UPDATE racingtrack SET finalized = TRUE WHERE id = #{int_id} AND finalized = FALSE")
-      return sendInternalError unless res
-      return sendError("403", "Racing track is already finalized.")  if res.cmd_tuples == 0
-      getRacingTrackObj(conn,int_id).to_json
-    end
-  rescue PG::Error => e
-    puts(e)
-    sendInternalError
-  end
+  response db_con.finalize_track(int_id)
 end
 
 MyApp.add_route('GET', '/racingTracks', {
@@ -196,14 +112,12 @@ MyApp.add_route('GET', '/racingTracks', {
   content_type 'application/json'
 
   # return an error if the value is not true, false or nil
-  return sendError("400", "Invalid Parameter.") unless ['true','false',nil].include? params["finalized"]
+  return error(400, "Invalid Parameter.") unless ['true','false',nil].include? params["finalized"]
 
   # set to true if true or nil
   finalized = ['true',nil].include? params["finalized"]
 
-  res = conn.exec("SELECT id FROM racingtrack WHERE finalized = #{finalized}");
-  all_tracks = res.map {|tuple| getRacingTrackObj(conn,tuple["id"])}
-  all_tracks.to_json
+  response db_con.get_all_tracks(finalized)
 end
 
 MyApp.add_route('GET', '/racingTracks/{id}', {
@@ -225,10 +139,11 @@ MyApp.add_route('GET', '/racingTracks/{id}', {
   content_type 'application/json'
   
   is_id_valid, int_id = validate_int(id)
-  return sendError("400", "Invalid ID.") unless is_id_valid
+  return error(400, "Invalid ID.") unless is_id_valid
 
-  getRacingTrackObj(conn, int_id).to_json
+  response db_con.get_track(int_id)
 end
+
 
 MyApp.add_route('POST', '/racingTracks/{id}/positions', {
     "resourcePath" => "/Default",
@@ -255,103 +170,33 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', {
   content_type 'application/json'
 
   is_id_valid, int_id = validate_int(id)
-  return sendError("400", "Parameter not valid.") unless is_id_valid
+  return error(400, "Parameter not valid.") unless is_id_valid
 
   begin
     body = JSON.parse(request.body.read)
-
-    position = body["position"]
-
-    if position.nil? then
-      sendError("400", "Parameter not valid.")
-    else
-      latitude = position["latitude"]
-      longitude = position["longitude"]
-      timestamp = position["timestamp"]
-
-      #check values and ranges of lat, long and timestamp
-      if latitude.is_a?(Float) == false || longitude.is_a?(Float) == false ||
-          latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180 ||
-          timestamp.is_a?(Integer) == false || timestamp < 0
-        sendError("400", "Parameter not valid.")
-      else
-        res1 = conn.exec("SELECT finalized FROM racingtrack WHERE id =#{int_id}")
-
-        if res1.num_tuples.zero? then
-          sendError("400", "Parameter not valid.")
-        elsif res1[0]["finalized"] == "t" then
-          sendError("403", "Racing track is already finalized.")
-        else
-          res2 = conn.exec("INSERT INTO position(racingtrackid, timestamp, latitude, longitude) VALUES (#{int_id}, #{timestamp}, #{latitude}, #{longitude})")
-          return sendError("400", "Parameter not valid.") if res2.cmd_tuples == 0
-          
-          pos = conn.exec("SELECT timestamp,longitude,latitude FROM position WHERE racingtrackid = #{int_id} AND timestamp = #{timestamp}")
-          return sendInternalError if pos.num_tuples.zero?
-
-          p = pos[0]
-          position = {
-            timestamp: p['timestamp'].to_i,
-            latitude: p['latitude'].to_f,
-            longitude: p['longitude'].to_f
-          }
-          position.to_json
-        end
-      end
-    end
   rescue JSON::ParserError, ArgumentError => e
     puts(e)
-    sendError("400", "Parameter not valid.")
-  rescue PG::Error => e
-    puts(e)
-    sendInternalError
+    return internal_error(400, "Parameter not valid.")
   end
-end
 
-def getRacingTrackObj(conn, id)
-   begin
-    res = conn.exec("SELECT id,name,finalized FROM racingtrack WHERE id = #{id}")
+  position = body["position"]
 
-    if res.num_tuples.zero? then
-      return sendError("400", "ID not valid.", true)
+  if position.nil? then
+    error(400, "Parameter not valid.")
+  else
+    latitude = position["latitude"]
+    longitude = position["longitude"]
+    timestamp = position["timestamp"]
+
+    success, payload = db_con.get_track(int_id,false)
+    if !success
+      error_pl(payload).to_json
+    elsif payload[:finalized]
+      error(403,"Racing track is already finalized.").to_json
     else
-
-      r = res.first
-      racingtrack = {
-        id: r['id'].to_i,
-        name: r['name'],
-        finalized: r['finalized']=='t',
-        positions:[]
-      }
-
-      positions = conn.exec("SELECT timestamp,longitude,latitude FROM position WHERE racingtrackid = #{id}")
-
-      racingtrack[:positions] = positions.map do |pos|
-        {
-          timestamp: pos['timestamp'].to_i,
-          latitude: pos['latitude'].to_f,
-          longitude: pos['longitude'].to_f
-        } 
-      end .sort_by {|pos| pos[:timestamp]}
-
-      racingtrack
+      response db_con.store_position(int_id, timestamp, latitude, longitude)
     end
-  rescue PG::Error => e
-    puts(e)
-    sendInternalError(true)
   end
-end
-
-def sendError(code, message, no_json = false)
-  status code
-  er = {
-    errorModel: {
-      code: code.to_i,
-      message: message
-    }
-  }
-
-  return er.to_json unless no_json
-  er
 end
 
 def validate_int(id)
@@ -360,6 +205,28 @@ def validate_int(id)
   [is_valid, int_id]
 end
 
-def sendInternalError(no_json = false)
-  sendError("500", "Unexpected internal error")
+def error(code, message)
+  status code
+  {
+    errorModel: {
+      code: code.to_i,
+      message: message
+    }
+  }
+end
+
+def error_pl(payload)
+  status payload[:errorModel][:code]
+  payload
+end
+
+def internal_error
+  error(500,"Unexpected internal error")
+end
+
+def response(data,success_code=200)
+  success=data[0]
+  payload=datay[1]
+  status success_code if success
+  (success ? payload : error_pl(payload)).to_json
 end
