@@ -79,7 +79,7 @@ class PostgresConnection
 	end
 
 	def get_position(track_id, timestamp)
-		pos = @connection.exec("SELECT timestamp,longitude,latitude FROM position WHERE racingtrackid = #{int_id} AND timestamp = #{timestamp}")
+		pos = @connection.exec("SELECT timestamp,longitude,latitude FROM position WHERE racingtrackid = #{track_id} AND timestamp = #{timestamp}")
     return [false, internal_error] if pos.num_tuples.zero?
 
     p = pos[0]
@@ -136,12 +136,6 @@ class PostgresConnection
 	end
 
 	def store_position(track_id, timestamp, latitude, longitude)
-
-		if latitude.is_a?(Float) == false || longitude.is_a?(Float) == false ||
-        latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180 ||
-        timestamp.is_a?(Integer) == false || timestamp < 0
-      [false, error(400, "Parameter not valid.")]
-    end
 
 		res = @connection.exec("INSERT INTO position(racingtrackid, timestamp, latitude, longitude) VALUES (#{track_id}, #{timestamp}, #{latitude}, #{longitude})")
 		return [false,error(400, "Parameter not valid.")] if res2.cmd_tuples == 0
