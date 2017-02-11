@@ -117,8 +117,8 @@ MyApp.add_route('GET', '/racingTracks', {
   # set to true if true or nil
   finalized = ['true',nil].include? params["finalized"]
 
-  response db_con.get_all_tracks(finalized)
-end
+  myresponse db_con.get_all_tracks(finalized)
+ end
 
 MyApp.add_route('GET', '/racingTracks/{id}', {
     "resourcePath" => "/Default",
@@ -176,7 +176,7 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', {
     body = JSON.parse(request.body.read)
   rescue JSON::ParserError, ArgumentError => e
     puts(e)
-    return internal_error(400, "Parameter not valid.")
+    return error(400, "Parameter not valid.")
   end
 
   position = body["position"]
@@ -220,13 +220,13 @@ def error_pl(payload)
   payload
 end
 
-def internal_error
+def internal_error()
   error(500,"Unexpected internal error")
 end
 
-def response(data,success_code=200)
+def myresponse(data, success_code = 200)
   success=data[0]
-  payload=datay[1]
+  payload=data[1]
   status success_code if success
   (success ? payload : error_pl(payload)).to_json
 end
