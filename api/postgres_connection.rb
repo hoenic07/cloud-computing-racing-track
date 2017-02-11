@@ -137,6 +137,12 @@ class PostgresConnection
 
 	def store_position(track_id, timestamp, latitude, longitude)
 
+		if latitude.is_a?(Float) == false || longitude.is_a?(Float) == false ||
+				latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180 ||
+				timestamp.is_a?(Integer) == false || timestamp < 0
+			return error(400, "Parameter not valid.")
+		end
+
 		res = @connection.exec("INSERT INTO position(racingtrackid, timestamp, latitude, longitude) VALUES (#{track_id}, #{timestamp}, #{latitude}, #{longitude})")
 		return [false,error(400, "Parameter not valid.")] if res2.cmd_tuples == 0
 		get_position(track_id)

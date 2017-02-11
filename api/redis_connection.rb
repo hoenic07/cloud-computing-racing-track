@@ -69,9 +69,10 @@ class RedisConnection
     if with_positions
       timestamps = @connection.smembers("racingtrack:" + track_id.to_s + ":timestamp")
 
-      positions = Array.new
+      positions = []
       timestamps.each do |timestamp|
-        positions.push(get_position(track_id, timestamp)[1])
+        success, position = get_position(track_id, timestamp)
+        positions.push(position) if success
       end
 
       track[:positions] = positions
@@ -95,7 +96,6 @@ class RedisConnection
       @connection.sadd(key_tracks, id)
 
       positions.each do |item|
-
         latitude = item["latitude"]
         longitude = item["longitude"]
         timestamp = item["timestamp"]
@@ -137,10 +137,10 @@ class RedisConnection
     @connection.hdel("racingtrack:" + track_id.to_s, "name")
 
     [true, nil] # -> empty response
-    # rescue => e
-    #  puts(e)
-    #  [false, internal_error]
-    # end
+      # rescue => e
+      #  puts(e)
+      #  [false, internal_error]
+      # end
   end
 
   def finalize_track(track_id)
@@ -160,8 +160,14 @@ class RedisConnection
   end
 
   def store_position(track_id, timestamp, latitude, longitude)
-    begin
 
+    if latitude.is_a?(Float) == false || longitude.is_a?(Float) == false ||
+        latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180 ||
+        timestamp.is_a?(Integer) == false || timestamp < 0
+      return [false, error(400, "Parameter not valid.")]
+    end
+
+    begin
       @connection.sadd("racingtrack:"+track_id.to_s+":timestamp", timestamp)
       @connection.hmset("racingtrack:"+track_id.to_s+":"+timestamp.to_s, "latitude", latitude, "longitude", longitude)
 
@@ -191,10 +197,10 @@ class RedisConnection
 
     #tODO pos_value nil check necessary?
 
-    lat_val = pos_value.pop
-    lng_val = pos_value.pop
+    lng_val = pos_value.pop.to_i
+    lat_val = pos_value.pop.to_i
 
-    if lat_val.nil? || lng_val.nil? then
+    if lat_val.nil? || lng_val.nil? || !(lat_val.is_a?(Numeric)) || !(lng_val.is_a?(Numeric)) then
       #ignore invalid lat/lng values => return nil
       puts("Invalid lat or lng value for racing track #" +track_id.to_s + " and timestamp " + timestamp.to_s)
 
