@@ -1,8 +1,8 @@
 require 'json'
 require 'date'
 
-#db_con = PostgresConnection.new(:heroku)
-db_con = RedisConnection.new(:local)
+db_con = PostgresConnection.new(:heroku)
+#db_con = RedisConnection.new(:local)
 
 MyApp.add_route("GET", "/swagger") do
   cross_origin
@@ -176,7 +176,7 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', {
     body = JSON.parse(request.body.read)
   rescue JSON::ParserError, ArgumentError => e
     puts(e)
-    return error(400, "Parameter not valid.")
+    return err(400, "Parameter not valid.")
   end
 
   position = body["position"]
@@ -232,6 +232,5 @@ def respond_with(data,success_code=200)
   success=data[0]
   payload=data[1]
   status success_code if success
-  puts "myresponse"
   (success ? payload : error_pl(payload)).to_json
 end

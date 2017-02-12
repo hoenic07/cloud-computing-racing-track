@@ -100,7 +100,7 @@ class PostgresConnection
       res2 = @connection.exec("DELETE FROM racingtrack WHERE id = #{id}")
 
       return [false,internal_error] unless res1 || res2
-      return [false,error(400,"ID not valid")] if res1.cmd_tuples == 0 || res2.cmd_tuples == 0
+      return [false,error(400,"ID not valid")] if res1.cmd_tuples.zero? || res2.cmd_tuples.zero?
 
       [true, nil] # -> empty response
 	  rescue PG::Error => e
@@ -114,7 +114,7 @@ class PostgresConnection
 			return [false, internal_error] unless ensure_connection
 			res = @connection.exec("UPDATE racingtrack SET finalized = TRUE WHERE id = #{track_id} AND finalized = FALSE")
 	    return [false, internal_error] unless res
-	    return [false, error(403, "Racing track is already finalized.")]  if res.cmd_tuples == 0
+	    return [false, error(403, "Racing track is already finalized.")]  if res.cmd_tuples.zero?
 
 	    get_track(track_id)
     rescue PG::Error => e
@@ -131,11 +131,11 @@ class PostgresConnection
 	      [false, error(400, "Parameter not valid.")]
 	    end
 
-	    is_existing,pl = get_position(track_id, timestamp)
+	    is_existing,_ = get_position(track_id, timestamp)
 	    return [false, error(400,"Timestamp already existing")] if is_existing
 
 			res = @connection.exec("INSERT INTO position(racingtrackid, timestamp, latitude, longitude) VALUES (#{track_id}, #{timestamp}, #{latitude}, #{longitude})")
-			return [false,error(400, "Parameter not valid.")] if res.cmd_tuples == 0
+			return [false,error(400, "Parameter not valid.")] if res.cmd_tuples.zero?
 			get_position(track_id,timestamp)
 		rescue PG::Error => e
 	    puts(e.message)
