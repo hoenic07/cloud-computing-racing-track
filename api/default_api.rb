@@ -1,11 +1,12 @@
 require 'json'
 require 'date'
 
-db_con = PostgresConnection.new(:heroku)
+#db_con = PostgresConnection.new(:heroku)
+db_con = RedisConnection.new(:local)
 
 MyApp.add_route("GET", "/swagger") do
   cross_origin
-  File.read(File.join('static','swagger.json'))
+  File.read(File.join('static', 'swagger.json'))
 end
 
 MyApp.add_route('POST', '/racingTracks', {
@@ -32,7 +33,7 @@ MyApp.add_route('POST', '/racingTracks', {
     puts(e)
     return err(400, "Parameter not valid.")
   end
-  
+
   racingTrack = body["racingTrack"]
   return err(400,"Parameter not valid") unless racingTrack
 
@@ -64,7 +65,7 @@ MyApp.add_route('DELETE', '/racingTracks/{id}', {
     ]}) do |id|
   cross_origin
   content_type 'application/json'
- 
+
   is_id_valid, int_id = validate_int(id)
   return err(400, "Invalid ID.") unless is_id_valid
 
@@ -92,7 +93,7 @@ MyApp.add_route('POST', '/racingTracks/{id}/finalize', {
   is_id_valid, int_id = validate_int(id)
   return err(400, "Invalid ID.") unless is_id_valid
 
-  success, payload = db_con.get_track(int_id)
+  success, payload = db_con.get_track(int_id, false)
   return error_pl(payload).to_json unless success
 
   respond_with db_con.finalize_track(int_id)
@@ -114,7 +115,7 @@ MyApp.add_route('GET', '/racingTracks', {
   return err(400, "Invalid Parameter.") unless ['true','false',nil].include? params["finalized"]
 
   # set to true if true or nil
-  finalized = ['true',nil].include? params["finalized"]
+  finalized = ['true', nil].include? params["finalized"]
 
   respond_with db_con.get_all_tracks(finalized)
 end
@@ -136,7 +137,7 @@ MyApp.add_route('GET', '/racingTracks/{id}', {
     ]}) do |id|
   cross_origin
   content_type 'application/json'
-  
+
   is_id_valid, int_id = validate_int(id)
   return err(400, "Invalid ID.") unless is_id_valid
 
@@ -175,7 +176,7 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', {
     body = JSON.parse(request.body.read)
   rescue JSON::ParserError, ArgumentError => e
     puts(e)
-    return internal_error(400, "Parameter not valid.")
+    return error(400, "Parameter not valid.")
   end
 
   position = body["position"]
@@ -187,7 +188,8 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', {
     longitude = position["longitude"]
     timestamp = position["timestamp"]
 
-    success, payload = db_con.get_track(int_id,false)
+    success, payload = db_con.get_track(int_id, false)
+    puts(success)
     if !success
       error_pl(payload).to_json
     elsif payload[:finalized]
@@ -205,17 +207,19 @@ def validate_int(id)
 end
 
 def err(code, message)
+  puts "error"
   status code
   puts "et"
   {
-    errorModel: {
-      code: code.to_i,
-      message: message
-    }
+      errorModel: {
+          code: code.to_i,
+          message: message
+      }
   }.to_json
 end
 
 def error_pl(payload)
+  puts "error_pl"
   status payload[:errorModel][:code]
   payload
 end
@@ -228,5 +232,6 @@ def respond_with(data,success_code=200)
   success=data[0]
   payload=data[1]
   status success_code if success
+  puts "myresponse"
   (success ? payload : error_pl(payload)).to_json
 end
