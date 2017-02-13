@@ -1,5 +1,6 @@
 source 'https://rubygems.org'
 
+gem "rubocop"
 gem "rack"
 gem "sinatra"
 gem "sinatra-cross_origin"
