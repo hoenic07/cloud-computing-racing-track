@@ -1,11 +1,11 @@
 require 'json'
 require 'date'
 
-#db_con = PostgresConnection.new(:heroku)
-db_con = RedisConnection.new(:local)
+# db_con = PostgresConnection.new(:heroku)
+db_con = RedisConnection.new(:aws)
 db_con.connect
 
-MyApp.add_route("GET", "/swagger") do
+MyApp.add_route('GET', '/swagger') do
   cross_origin
   File.read(File.join('static', 'swagger.json'))
 end
@@ -22,7 +22,7 @@ MyApp.add_route('POST', '/racingTracks', {
             "name" => "body",
             "description" => "body in form of a racing track",
             "dataType" => "RacingTrack",
-            "paramType" => "body",
+            "paramType" => "body"
         }
     ]}) do
   cross_origin
@@ -32,20 +32,20 @@ MyApp.add_route('POST', '/racingTracks', {
     body = JSON.parse(request.body.read)
   rescue JSON::ParserError, ArgumentError => e
     puts(e)
-    return error(400, "Parameter not valid.")
+    return error(400, 'Parameter not valid.')
   end
 
-  racingTrack = body["racingTrack"]
-  return error(400, "Parameter not valid") unless racingTrack
+  racing_track = body['racingTrack']
+  return error(400, 'Parameter not valid') unless racing_track
 
-  name = racingTrack["name"]
-  finalized = racingTrack["finalized"] || false
-  positions = racingTrack["positions"] || []
-  #other parameters are ignored
+  name = racing_track['name']
+  finalized = racing_track['finalized'] || false
+  positions = racing_track['positions'] || []
+  # other parameters are ignored
 
-  return error(400, "Parameter not valid") if name.is_a?(String) == false || name.nil? || name.empty?
-  return error(400, "Parameter not valid") unless finalized == true || finalized == false
-  myresponse(db_con.store_track(name, finalized, positions), 201)
+  return error(400, 'Parameter not valid') if name.is_a?(String) == false || name.nil? || name.empty?
+  return error(400, 'Parameter not valid') unless finalized == true || finalized == false
+  my_response(db_con.store_track(name, finalized, positions), 201)
 end
 
 
@@ -68,9 +68,9 @@ MyApp.add_route('DELETE', '/racingTracks/{id}', {
   content_type 'application/json'
 
   is_id_valid, int_id = validate_int(id)
-  return error(400, "Invalid ID.") unless is_id_valid
+  return error(400, 'Invalid ID.') unless is_id_valid
 
-  myresponse(db_con.delete_track(int_id), 204)
+  my_response(db_con.delete_track(int_id), 204)
 end
 
 MyApp.add_route('POST', '/racingTracks/{id}/finalize', {
@@ -92,12 +92,12 @@ MyApp.add_route('POST', '/racingTracks/{id}/finalize', {
   content_type 'application/json'
 
   is_id_valid, int_id = validate_int(id)
-  return error(400, "Invalid ID.") unless is_id_valid
+  return error(400, 'Invalid ID.') unless is_id_valid
 
   success, payload = db_con.get_track(int_id, false)
   return error_pl(payload).to_json unless success
 
-  myresponse db_con.finalize_track(int_id)
+  my_response db_con.finalize_track(int_id)
 end
 
 MyApp.add_route('GET', '/racingTracks', {
@@ -113,12 +113,12 @@ MyApp.add_route('GET', '/racingTracks', {
   content_type 'application/json'
 
   # return an error if the value is not true, false or nil
-  return error(400, "Invalid Parameter.") unless ['true', 'false', nil].include? params["finalized"]
+  return error(400, 'Invalid Parameter.') unless ['true', 'false', nil].include? params['finalized']
 
   # set to true if true or nil
-  finalized = ['true', nil].include? params["finalized"]
+  finalized = ['true', nil].include? params['finalized']
 
-  myresponse db_con.get_all_tracks(finalized)
+  my_response db_con.get_all_tracks(finalized)
 end
 
 MyApp.add_route('GET', '/racingTracks/{id}', {
@@ -140,9 +140,9 @@ MyApp.add_route('GET', '/racingTracks/{id}', {
   content_type 'application/json'
 
   is_id_valid, int_id = validate_int(id)
-  return error(400, "Invalid ID.") unless is_id_valid
+  return error(400, 'Invalid ID.') unless is_id_valid
 
-  myresponse db_con.get_track(int_id)
+  my_response db_con.get_track(int_id)
 end
 
 
@@ -171,34 +171,33 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', {
   content_type 'application/json'
 
   is_id_valid, int_id = validate_int(id)
-  return error(400, "Parameter not valid.") unless is_id_valid
+  return error(400, 'Parameter not valid.') unless is_id_valid
 
   begin
     body = JSON.parse(request.body.read)
   rescue JSON::ParserError, ArgumentError => e
     puts(e)
-    return error(400, "Parameter not valid.")
+    return error(400, 'Parameter not valid.')
   end
 
-  position = body["position"]
+  position = body['position']
 
-  if position.nil? then
-    error(400, "Parameter not valid.")
+  return error(400, 'Parameter not valid.') if position.nil?
+
+  latitude = position['latitude']
+  longitude = position['longitude']
+  timestamp = position['timestamp']
+
+  success, payload = db_con.get_track(int_id, false)
+
+  if !success
+    error_pl(payload).to_json
+  elsif payload[:finalized]
+    error(403, 'Racing track is already finalized.').to_json
   else
-    latitude = position["latitude"]
-    longitude = position["longitude"]
-    timestamp = position["timestamp"]
-
-    success, payload = db_con.get_track(int_id, false)
-    puts(success)
-    if !success
-      error_pl(payload).to_json
-    elsif payload[:finalized]
-      error(403, "Racing track is already finalized.").to_json
-    else
-      myresponse(db_con.store_position(int_id, timestamp, latitude, longitude))
-    end
+    my_response db_con.store_position(int_id, timestamp, latitude, longitude)
   end
+
 end
 
 def validate_int(id)
@@ -208,7 +207,6 @@ def validate_int(id)
 end
 
 def error(code, message)
-  puts "error"
   status code
   {
       errorModel: {
@@ -219,19 +217,17 @@ def error(code, message)
 end
 
 def error_pl(payload)
-  puts "error_pl"
   status payload[:errorModel][:code]
   payload
 end
 
-def internal_error()
-  error(500, "Unexpected internal error")
+def internal_error
+  error(500, 'Unexpected internal error')
 end
 
-def myresponse(data, success_code = 200)
+def my_response(data, success_code = 200)
   success=data[0]
   payload=data[1]
   status success_code if success
-  puts "myresponse"
   (success ? payload : error_pl(payload)).to_json
 end
