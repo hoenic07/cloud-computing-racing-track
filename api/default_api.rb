@@ -1,8 +1,8 @@
 require 'json'
 require 'date'
 
-#db_con = PostgresConnection.new(:heroku)
- db_con = RedisConnection.new(:aws)
+db_con = PostgresConnection.new(:heroku)
+# db_con = RedisConnection.new(:aws)
 db_con.connect
 
 MyApp.add_route('GET', '/swagger') do
@@ -34,12 +34,12 @@ MyApp.add_route('POST', '/racingTracks', 'resourcePath' => '/Default',
     return err(400, 'Parameter not valid.')
   end
 
-  racingTrack = body['racingTrack']
-  return err(400, 'Parameter not valid') unless racingTrack
+  racing_track = body['racingTrack']
+  return err(400, 'Parameter not valid') unless racing_track
 
-  name = racingTrack['name']
-  finalized = racingTrack['finalized'] || false
-  positions = racingTrack['positions'] || []
+  name = racing_track['name']
+  finalized = racing_track['finalized'] || false
+  positions = racing_track['positions'] || []
   # other parameters are ignored
 
   return err(400, 'Parameter not valid') if name.is_a?(String) == false || name.nil? || name.empty? || positions.is_a?(Array) == false

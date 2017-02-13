@@ -3,19 +3,19 @@ require 'redis'
 class RedisConnection
   def initialize(db_provider)
     @connection = nil
-    @db_provider = db_provider # :aws :local
+    @db_provider = db_provider # :heroku :aws :local
   end
 
   def connect
     if @db_provider == :heroku
-      # TODO
-    elsif @db_provider == :aws
       @connection=Redis.new(
           :host => 'ec2-34-249-143-159.eu-west-1.compute.amazonaws.com',
           :port => 23619,
           :user => 'h',
           :password => 'p44062d44f046721f9cfe9df9da49c7e786f299c5dca666be0e8dad33b178e379'
       )
+    elsif @db_provider == :aws
+      #TODO
     elsif @db_provider == :local
       @connection = Redis.new(
           host: '127.0.0.1',
