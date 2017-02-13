@@ -1,8 +1,9 @@
 require 'json'
 require 'date'
 
-db_con = PostgresConnection.new(:heroku)
-# db_con = RedisConnection.new(:local)
+#db_con = PostgresConnection.new(:heroku)
+ db_con = RedisConnection.new(:aws)
+db_con.connect
 
 MyApp.add_route('GET', '/swagger') do
   cross_origin
@@ -10,19 +11,19 @@ MyApp.add_route('GET', '/swagger') do
 end
 
 MyApp.add_route('POST', '/racingTracks', 'resourcePath' => '/Default',
-                                         'summary' => '',
-                                         'nickname' => 'create_racing_track',
-                                         'responseClass' => 'racingTrack',
-                                         'endpoint' => '/racingTracks',
-                                         'notes' => 'Creates a new racing track with a given namen and returns the racing track object which id is needed to update and finalize the racing track. Optionally position can be initally be added and the track can also be finalized. The ID of the racing track is server side generated.',
-                                         'parameters' => [
-                                           {
-                                             'name' => 'body',
-                                             'description' => 'body in form of a racing track',
-                                             'dataType' => 'RacingTrack',
-                                             'paramType' => 'body'
-                                           }
-                                         ]) do
+                'summary' => '',
+                'nickname' => 'create_racing_track',
+                'responseClass' => 'racingTrack',
+                'endpoint' => '/racingTracks',
+                'notes' => 'Creates a new racing track with a given namen and returns the racing track object which id is needed to update and finalize the racing track. Optionally position can be initally be added and the track can also be finalized. The ID of the racing track is server side generated.',
+                'parameters' => [
+                    {
+                        'name' => 'body',
+                        'description' => 'body in form of a racing track',
+                        'dataType' => 'RacingTrack',
+                        'paramType' => 'body'
+                    }
+                ]) do
   cross_origin
   content_type 'application/json'
 
@@ -47,19 +48,19 @@ MyApp.add_route('POST', '/racingTracks', 'resourcePath' => '/Default',
 end
 
 MyApp.add_route('DELETE', '/racingTracks/{id}', 'resourcePath' => '/Default',
-                                                'summary' => '',
-                                                'nickname' => 'delete_racing_track',
-                                                'responseClass' => 'void',
-                                                'endpoint' => '/racingTracks/{id}',
-                                                'notes' => 'Deletes a single racing track based on the ID supplied',
-                                                'parameters' => [
-                                                  {
-                                                    'name' => 'id',
-                                                    'description' => 'ID of racing track to delete',
-                                                    'dataType' => 'int',
-                                                    'paramType' => 'path'
-                                                  }
-                                                ]) do |id|
+                'summary' => '',
+                'nickname' => 'delete_racing_track',
+                'responseClass' => 'void',
+                'endpoint' => '/racingTracks/{id}',
+                'notes' => 'Deletes a single racing track based on the ID supplied',
+                'parameters' => [
+                    {
+                        'name' => 'id',
+                        'description' => 'ID of racing track to delete',
+                        'dataType' => 'int',
+                        'paramType' => 'path'
+                    }
+                ]) do |id|
   cross_origin
   content_type 'application/json'
 
@@ -70,19 +71,19 @@ MyApp.add_route('DELETE', '/racingTracks/{id}', 'resourcePath' => '/Default',
 end
 
 MyApp.add_route('POST', '/racingTracks/{id}/finalize', 'resourcePath' => '/Default',
-                                                       'summary' => '',
-                                                       'nickname' => 'finalize_racing_track',
-                                                       'responseClass' => 'racingTrack',
-                                                       'endpoint' => '/racingTracks/{id}/finalize',
-                                                       'notes' => 'Finalizes a racing track to prevent editing based on the ID supplied',
-                                                       'parameters' => [
-                                                         {
-                                                           'name' => 'id',
-                                                           'description' => 'ID of racing track to update',
-                                                           'dataType' => 'int',
-                                                           'paramType' => 'path'
-                                                         }
-                                                       ]) do |id|
+                'summary' => '',
+                'nickname' => 'finalize_racing_track',
+                'responseClass' => 'racingTrack',
+                'endpoint' => '/racingTracks/{id}/finalize',
+                'notes' => 'Finalizes a racing track to prevent editing based on the ID supplied',
+                'parameters' => [
+                    {
+                        'name' => 'id',
+                        'description' => 'ID of racing track to update',
+                        'dataType' => 'int',
+                        'paramType' => 'path'
+                    }
+                ]) do |id|
   cross_origin
   content_type 'application/json'
 
@@ -96,13 +97,13 @@ MyApp.add_route('POST', '/racingTracks/{id}/finalize', 'resourcePath' => '/Defau
 end
 
 MyApp.add_route('GET', '/racingTracks', 'resourcePath' => '/Default',
-                                        'summary' => '',
-                                        'nickname' => 'find_racing_track',
-                                        'responseClass' => 'array[racingTrack]',
-                                        'endpoint' => '/racingTracks',
-                                        'notes' => 'Returns all finalized racing tracks from the system',
-                                        'parameters' => [
-                                        ]) do
+                'summary' => '',
+                'nickname' => 'find_racing_track',
+                'responseClass' => 'array[racingTrack]',
+                'endpoint' => '/racingTracks',
+                'notes' => 'Returns all finalized racing tracks from the system',
+                'parameters' => [
+                ]) do
   cross_origin
   content_type 'application/json'
 
@@ -116,19 +117,19 @@ MyApp.add_route('GET', '/racingTracks', 'resourcePath' => '/Default',
 end
 
 MyApp.add_route('GET', '/racingTracks/{id}', 'resourcePath' => '/Default',
-                                             'summary' => '',
-                                             'nickname' => 'find_racing_track_by_id',
-                                             'responseClass' => 'racingTrack',
-                                             'endpoint' => '/racingTracks/{id}',
-                                             'notes' => 'Returns a racing track based on a single ID',
-                                             'parameters' => [
-                                               {
-                                                 'name' => 'id',
-                                                 'description' => 'ID of racing track to fetch',
-                                                 'dataType' => 'int',
-                                                 'paramType' => 'path'
-                                               }
-                                             ]) do |id|
+                'summary' => '',
+                'nickname' => 'find_racing_track_by_id',
+                'responseClass' => 'racingTrack',
+                'endpoint' => '/racingTracks/{id}',
+                'notes' => 'Returns a racing track based on a single ID',
+                'parameters' => [
+                    {
+                        'name' => 'id',
+                        'description' => 'ID of racing track to fetch',
+                        'dataType' => 'int',
+                        'paramType' => 'path'
+                    }
+                ]) do |id|
   cross_origin
   content_type 'application/json'
 
@@ -139,25 +140,25 @@ MyApp.add_route('GET', '/racingTracks/{id}', 'resourcePath' => '/Default',
 end
 
 MyApp.add_route('POST', '/racingTracks/{id}/positions', 'resourcePath' => '/Default',
-                                                        'summary' => '',
-                                                        'nickname' => 'update_racing_track_position',
-                                                        'responseClass' => 'position',
-                                                        'endpoint' => '/racingTracks/{id}/positions',
-                                                        'notes' => 'Creates and adds a postion of a racing track as long as it is not finalized based on the ID supplied',
-                                                        'parameters' => [
-                                                          {
-                                                            'name' => 'id',
-                                                            'description' => 'ID of racing track to update',
-                                                            'dataType' => 'int',
-                                                            'paramType' => 'path'
-                                                          },
-                                                          {
-                                                            'name' => 'body',
-                                                            'description' => 'position body',
-                                                            'dataType' => 'Position',
-                                                            'paramType' => 'body'
-                                                          }
-                                                        ]) do |id|
+                'summary' => '',
+                'nickname' => 'update_racing_track_position',
+                'responseClass' => 'position',
+                'endpoint' => '/racingTracks/{id}/positions',
+                'notes' => 'Creates and adds a postion of a racing track as long as it is not finalized based on the ID supplied',
+                'parameters' => [
+                    {
+                        'name' => 'id',
+                        'description' => 'ID of racing track to update',
+                        'dataType' => 'int',
+                        'paramType' => 'path'
+                    },
+                    {
+                        'name' => 'body',
+                        'description' => 'position body',
+                        'dataType' => 'Position',
+                        'paramType' => 'body'
+                    }
+                ]) do |id|
   cross_origin
   content_type 'application/json'
 
@@ -173,22 +174,20 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', 'resourcePath' => '/Defa
 
   position = body['position']
 
-  if position.nil?
-    err(400, 'Parameter not valid.')
-  else
-    latitude = position['latitude']
-    longitude = position['longitude']
-    timestamp = position['timestamp']
+  return error(400, 'Parameter not valid.') if position.nil?
 
-    success, payload = db_con.get_track(int_id, false)
-    puts(success)
-    if !success
-      error_pl(payload).to_json
-    elsif payload[:finalized]
-      err(403, 'Racing track is already finalized.')
-    else
-      respond_with db_con.store_position(int_id, timestamp, latitude, longitude)
-    end
+  latitude = position['latitude']
+  longitude = position['longitude']
+  timestamp = position['timestamp']
+
+  success, payload = db_con.get_track(int_id, false)
+
+  if !success
+    error_pl(payload).to_json
+  elsif payload[:finalized]
+    err(403, 'Racing track is already finalized.')
+  else
+    respond_with db_con.store_position(int_id, timestamp, latitude, longitude)
   end
 end
 
@@ -199,19 +198,16 @@ def validate_int(id)
 end
 
 def err(code, message)
-  puts 'error'
   status code
-  puts 'et'
   {
-    errorModel: {
-      code: code.to_i,
-      message: message
-    }
+      errorModel: {
+          code: code.to_i,
+          message: message
+      }
   }.to_json
 end
 
 def error_pl(payload)
-  puts 'error_pl'
   status payload[:errorModel][:code]
   payload
 end

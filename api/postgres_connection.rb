@@ -10,6 +10,7 @@ class PostgresConnection
     return [false, internal_error] unless ensure_connection
     res = @connection.exec("SELECT id FROM racingtrack WHERE finalized = #{finalized}")
     all_tracks = res.map { |tuple| get_track(tuple['id'])[1] }
+
     [true, all_tracks]
   rescue PG::Error => e
     puts(e)
@@ -19,7 +20,7 @@ class PostgresConnection
   def get_track(id, with_positions = true)
     return [false, internal_error] unless ensure_connection
     res = @connection.exec("SELECT id,name,finalized FROM racingtrack WHERE id = #{id}")
-    puts res.num_tuples.zero?
+
     return [false, error(400, 'ID not valid.')] if res.num_tuples.zero?
 
     r = res.first
@@ -77,7 +78,7 @@ class PostgresConnection
       store_position(id, timestamp, latitude, longitude)
     end
 
-    get_track(id)
+    [true, get_track(id)]
 
   rescue PG::Error => e
     puts(e)
@@ -104,7 +105,7 @@ class PostgresConnection
     return [false, internal_error] unless res
     return [false, error(403, 'Racing track is already finalized.')] if res.cmd_tuples.zero?
 
-    get_track(track_id)
+    [true, get_track(track_id)]
   rescue PG::Error => e
     puts(e.message)
     [false, internal_error]
@@ -122,6 +123,7 @@ class PostgresConnection
 
     res = @connection.exec("INSERT INTO position(racingtrackid, timestamp, latitude, longitude) VALUES (#{track_id}, #{timestamp}, #{latitude}, #{longitude})")
     return [false, error(400, 'Parameter not valid.')] if res.cmd_tuples.zero?
+
     get_position(track_id, timestamp)
   rescue PG::Error => e
     puts(e.message)
