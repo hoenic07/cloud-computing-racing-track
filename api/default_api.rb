@@ -176,8 +176,8 @@ MyApp.add_route('GET', '/racingTracks/{id}', 'resourcePath' => '/Default',
   return err(400, 'Invalid ID.') unless is_id_valid
 
   res = db_con.get_track(int_id)
-  
-  if res[0] && res[1][:racingTrack][:positions].length >= 2 then
+
+  if res[0] && res[1][:racingTrack][:finalized] && res[1][:racingTrack][:positions].length >= 2 then
     $myLogger.info { "Resolving positions to addresses" }
     start = Geocoder.search("#{res[1][:racingTrack][:positions].first[:position][:latitude]},#{res[1][:racingTrack][:positions].first[:position][:longitude]}")  
     goal = Geocoder.search("#{res[1][:racingTrack][:positions].last[:position][:latitude]},#{res[1][:racingTrack][:positions].last[:position][:longitude]}")
