@@ -31,6 +31,8 @@ MyApp.add_route('POST', '/racingTracks', 'resourcePath' => '/Default',
   cross_origin
   content_type 'application/json'
   
+  $myLogger.debug { "Incoming Request to POST /racingTracks"}
+  
   begin
     body = JSON.parse(request.body.read)
   rescue JSON::ParserError, ArgumentError => e
@@ -68,6 +70,8 @@ MyApp.add_route('DELETE', '/racingTracks/{id}', 'resourcePath' => '/Default',
   cross_origin
   content_type 'application/json'
 
+  $myLogger.debug { "Incoming Request to DELETE /racingTracks/{id}"}
+
   is_id_valid, int_id = validate_int(id)
   return err(400, 'Invalid ID.') unless is_id_valid
 
@@ -91,6 +95,8 @@ MyApp.add_route('POST', '/racingTracks/{id}/finalize', 'resourcePath' => '/Defau
   cross_origin
   content_type 'application/json'
 
+  $myLogger.debug { "Incoming Request to POST /racingTracks/{id}/finalize"}
+
   is_id_valid, int_id = validate_int(id)
   return err(400, 'Invalid ID.') unless is_id_valid
 
@@ -110,6 +116,8 @@ MyApp.add_route('GET', '/racingTracks', 'resourcePath' => '/Default',
                 ]) do
   cross_origin
   content_type 'application/json'
+
+  $myLogger.debug { "Incoming Request to GET /racingTracks"}
 
   # return an error if the value is not true, false or nil
   return err(400, 'Invalid Parameter.') unless ['true', 'false', nil].include? params['finalized']
@@ -136,6 +144,8 @@ MyApp.add_route('GET', '/racingTracks/{id}', 'resourcePath' => '/Default',
                 ]) do |id|
   cross_origin
   content_type 'application/json'
+
+  $myLogger.debug { "Incoming Request to GET /racingTracks/{id}"}
 
   is_id_valid, int_id = validate_int(id)
   return err(400, 'Invalid ID.') unless is_id_valid
@@ -165,6 +175,8 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', 'resourcePath' => '/Defa
                 ]) do |id|
   cross_origin
   content_type 'application/json'
+
+  $myLogger.debug { "Incoming Request to POST /racingTracks/{id}/positions"}
 
   is_id_valid, int_id = validate_int(id)
   return err(400, 'Parameter not valid.') unless is_id_valid
