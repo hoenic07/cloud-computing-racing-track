@@ -1,9 +1,13 @@
 require 'pg'
+require 'logger'
 
 class PostgresConnection
+
   def initialize(db_provider)
     @connection = nil
     @db_provider = db_provider # :heroku, :aws, :local
+    @logger = Logger.new(STDOUT)
+    @logger.level = Logger::DEBUG
   end
 
   def get_all_tracks(finalized)
@@ -13,7 +17,7 @@ class PostgresConnection
 
     [true, all_tracks]
   rescue PG::Error => e
-    puts(e)
+    @logger.error {"PG Error: #{e.message}"}
     [false, internal_error]
   end
 
@@ -48,7 +52,7 @@ class PostgresConnection
 
     [true, racing_track]
   rescue PG::Error => e
-    puts(e)
+    @logger.error {"PG Error: #{e.message}"}
     [false, internal_error]
   end
 
@@ -68,7 +72,7 @@ class PostgresConnection
 
     [true, position]
   rescue PG::Error => e
-    puts(e.message)
+    @logger.error {"PG Error: #{e.message}"}
     [false, internal_error]
   end
 
@@ -86,7 +90,7 @@ class PostgresConnection
 
     get_track(id)
   rescue PG::Error => e
-    puts(e)
+    @logger.error {"PG Error: #{e.message}"}
     [false, internal_error]
   end
 
@@ -100,7 +104,7 @@ class PostgresConnection
 
     [true, nil] # -> empty response
   rescue PG::Error => e
-    puts(e.message)
+    @logger.error {"PG Error: #{e.message}"}
     [false, internal_error]
   end
 
@@ -112,7 +116,7 @@ class PostgresConnection
 
     get_track(track_id)
   rescue PG::Error => e
-    puts(e.message)
+    @logger.error {"PG Error: #{e.message}"}
     [false, internal_error]
   end
 
@@ -131,7 +135,7 @@ class PostgresConnection
 
     get_position(track_id, timestamp)
   rescue PG::Error => e
-    puts(e.message)
+    @logger.error {"PG Error: #{e.message}"}
     [false, internal_error]
   end
 
@@ -157,7 +161,7 @@ class PostgresConnection
       PGconn.connect(hostaddr: '127.0.0.1', port: 5432, dbname: 'postgres', user: 'postgres', password: 'password')
     end
   rescue PG::Error => e
-    puts e.message
+    @logger.error {"PG Error: #{e.message}"}
   end
 
   private

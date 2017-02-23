@@ -1,5 +1,9 @@
 require 'json'
 require 'date'
+require 'logdna'
+
+$myLogger = Logger.new(STDOUT)
+$myLogger.level = Logger::DEBUG
 
 db_con = PostgresConnection.new(:heroku)
 # db_con = RedisConnection.new(:aws)
@@ -26,11 +30,11 @@ MyApp.add_route('POST', '/racingTracks', 'resourcePath' => '/Default',
                 ]) do
   cross_origin
   content_type 'application/json'
-
+  
   begin
     body = JSON.parse(request.body.read)
   rescue JSON::ParserError, ArgumentError => e
-    puts(e)
+    $myLogger.error {"API Error: #{e.message}"}
     return err(400, 'Parameter not valid.')
   end
 
@@ -168,7 +172,7 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', 'resourcePath' => '/Defa
   begin
     body = JSON.parse(request.body.read)
   rescue JSON::ParserError, ArgumentError => e
-    puts(e)
+    $myLogger.error {"API Error: #{e.message}"}
     return err(400, 'Parameter not valid.')
   end
 
@@ -198,6 +202,7 @@ def validate_int(id)
 end
 
 def err(code, message)
+  $myLogger.info { "Failed Request: #{code} - #{message}"}
   status code
   {
       errorModel: {
@@ -208,6 +213,7 @@ def err(code, message)
 end
 
 def error_pl(payload)
+  $myLogger.info { "Failed Request: #{payload[:errorModel][:code]} - #{payload[:errorModel][:message]}"}
   status payload[:errorModel][:code]
   payload
 end
