@@ -1,9 +1,34 @@
 require 'json'
 require 'date'
 require 'logdna'
+require 'geocoder'
 
+# Use proper login for logDNA
 $myLogger = Logger.new(STDOUT)
 $myLogger.level = Logger::DEBUG
+
+# config/initializers/geocoder.rb
+Geocoder.configure(
+  # geocoding service:
+  :lookup => :google,
+
+  # IP address geocoding service:
+  :ip_lookup => :maxmind,
+
+  # to use an API key:
+  :api_key => 'AIzaSyAfTjdechLjnh-BHmP3kWwGiSFis5u-pms',
+
+  # this is very important option for configuring geocoder with API key
+  :use_https => true,
+
+  # set default units to kilometers:
+  :units => :km,
+  
+  :http_proxy => ENV['QUOTAGUARD_URL'],
+  
+  :timeout => 5
+)
+
 
 db_con = PostgresConnection.new(:heroku)
 # db_con = RedisConnection.new(:aws)
@@ -150,7 +175,18 @@ MyApp.add_route('GET', '/racingTracks/{id}', 'resourcePath' => '/Default',
   is_id_valid, int_id = validate_int(id)
   return err(400, 'Invalid ID.') unless is_id_valid
 
-  respond_with db_con.get_track(int_id)
+  res = db_con.get_track(int_id)
+  
+  if res[0] && res[1][:racingTrack][:positions].length >= 2 then
+    $myLogger.info { "Resolving positions to addresses" }
+    start = Geocoder.search("#{res[1][:racingTrack][:positions].first[:position][:latitude]},#{res[1][:racingTrack][:positions].first[:position][:longitude]}")  
+    goal = Geocoder.search("#{res[1][:racingTrack][:positions].last[:position][:latitude]},#{res[1][:racingTrack][:positions].last[:position][:longitude]}")
+    
+    res[1][:racingTrack][:startAddress] = start.first.data['formatted_address']
+    res[1][:racingTrack][:endAddress] = goal.first.data['formatted_address']  
+  end
+  
+  respond_with res
 end
 
 MyApp.add_route('POST', '/racingTracks/{id}/positions', 'resourcePath' => '/Default',

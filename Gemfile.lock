@@ -6,6 +6,7 @@ GEM
     ast (2.3.0)
     domain_name (0.5.20170223)
       unf (>= 0.0.5, < 1.0.0)
+    geocoder (1.4.3)
     http (2.2.1)
       addressable (~> 2.3)
       http-cookie (~> 1.0)
@@ -49,6 +50,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  geocoder
   logdna
   pg
   rack
