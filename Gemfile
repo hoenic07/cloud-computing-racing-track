@@ -8,3 +8,4 @@ gem "pg"
 gem 'redis', '~>3.2'
 gem 'logdna'
 gem 'geocoder'
+gem "newrelic_rpm"
