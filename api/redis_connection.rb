@@ -1,9 +1,12 @@
 require 'redis'
+require 'logger'
 
 class RedisConnection
   def initialize(db_provider)
     @connection = nil
     @db_provider = db_provider # :heroku :aws :local
+    @logger = Logger.new(STDOUT)
+    @logger.level = Logger::DEBUG
   end
 
   def connect
@@ -24,7 +27,7 @@ class RedisConnection
     end
     true
   rescue => e
-    puts e.message
+    @logger.error {"Redis Error: #{e.message}"}
     false
   end
 
@@ -43,7 +46,7 @@ class RedisConnection
 
     [true, all_tracks]
   rescue => e
-    puts(e)
+    @logger.error {"Redis Error: #{e.message}"}
     [false, internal_error]
   end
 
@@ -84,7 +87,7 @@ class RedisConnection
 
       [true, track]
     rescue => e
-      puts(e)
+      @logger.error {"Redis Error: #{e.message}"}
       [false, internal_error]
     end
   end
@@ -108,7 +111,7 @@ class RedisConnection
 
     get_track(id)
   rescue => e
-    puts(e)
+    @logger.error {"Redis Error: #{e.message}"}
     [false, internal_error]
   end
 
@@ -136,7 +139,7 @@ class RedisConnection
 
     [true, nil] # -> empty response
      rescue => e
-      puts(e)
+      @logger.error {"Redis Error: #{e.message}"}
       [false, internal_error]
      end
   end
@@ -151,7 +154,7 @@ class RedisConnection
 
     [true, get_track(track_id, true)]
   rescue => e
-    puts(e)
+    @logger.error {"Redis Error: #{e.message}"}
     [false, internal_error]
   end
 
@@ -176,7 +179,7 @@ class RedisConnection
 
       [true, position]
     rescue => e
-      puts(e)
+      @logger.error {"Redis Error: #{e.message}"}
       [false, internal_error]
     end
   end

@@ -1,5 +1,34 @@
 require 'json'
 require 'date'
+require 'logdna'
+require 'geocoder'
+
+# Use proper login for logDNA
+$myLogger = Logger.new(STDOUT)
+$myLogger.level = Logger::DEBUG
+
+# config/initializers/geocoder.rb
+Geocoder.configure(
+  # geocoding service:
+  :lookup => :google,
+
+  # IP address geocoding service:
+  :ip_lookup => :maxmind,
+
+  # to use an API key:
+  :api_key => 'AIzaSyAfTjdechLjnh-BHmP3kWwGiSFis5u-pms',
+
+  # this is very important option for configuring geocoder with API key
+  :use_https => true,
+
+  # set default units to kilometers:
+  :units => :km,
+  
+  :http_proxy => ENV['QUOTAGUARD_URL'],
+  
+  :timeout => 5
+)
+
 
 db_con = PostgresConnection.new(:heroku)
 # db_con = RedisConnection.new(:aws)
@@ -26,11 +55,13 @@ MyApp.add_route('POST', '/racingTracks', 'resourcePath' => '/Default',
                 ]) do
   cross_origin
   content_type 'application/json'
-
+  
+  $myLogger.debug { "Incoming Request to POST /racingTracks"}
+  
   begin
     body = JSON.parse(request.body.read)
   rescue JSON::ParserError, ArgumentError => e
-    puts(e)
+    $myLogger.error {"API Error: #{e.message}"}
     return err(400, 'Parameter not valid.')
   end
 
@@ -64,6 +95,8 @@ MyApp.add_route('DELETE', '/racingTracks/{id}', 'resourcePath' => '/Default',
   cross_origin
   content_type 'application/json'
 
+  $myLogger.debug { "Incoming Request to DELETE /racingTracks/{id}"}
+
   is_id_valid, int_id = validate_int(id)
   return err(400, 'Invalid ID.') unless is_id_valid
 
@@ -87,6 +120,8 @@ MyApp.add_route('POST', '/racingTracks/{id}/finalize', 'resourcePath' => '/Defau
   cross_origin
   content_type 'application/json'
 
+  $myLogger.debug { "Incoming Request to POST /racingTracks/{id}/finalize"}
+
   is_id_valid, int_id = validate_int(id)
   return err(400, 'Invalid ID.') unless is_id_valid
 
@@ -106,6 +141,8 @@ MyApp.add_route('GET', '/racingTracks', 'resourcePath' => '/Default',
                 ]) do
   cross_origin
   content_type 'application/json'
+
+  $myLogger.debug { "Incoming Request to GET /racingTracks"}
 
   # return an error if the value is not true, false or nil
   return err(400, 'Invalid Parameter.') unless ['true', 'false', nil].include? params['finalized']
@@ -133,10 +170,23 @@ MyApp.add_route('GET', '/racingTracks/{id}', 'resourcePath' => '/Default',
   cross_origin
   content_type 'application/json'
 
+  $myLogger.debug { "Incoming Request to GET /racingTracks/{id}"}
+
   is_id_valid, int_id = validate_int(id)
   return err(400, 'Invalid ID.') unless is_id_valid
 
-  respond_with db_con.get_track(int_id)
+  res = db_con.get_track(int_id)
+
+  if res[0] && res[1][:racingTrack][:finalized] && res[1][:racingTrack][:positions].length >= 2 then
+    $myLogger.info { "Resolving positions to addresses" }
+    start = Geocoder.search("#{res[1][:racingTrack][:positions].first[:position][:latitude]},#{res[1][:racingTrack][:positions].first[:position][:longitude]}")  
+    goal = Geocoder.search("#{res[1][:racingTrack][:positions].last[:position][:latitude]},#{res[1][:racingTrack][:positions].last[:position][:longitude]}")
+    
+    res[1][:racingTrack][:startAddress] = start.first.data['formatted_address']
+    res[1][:racingTrack][:endAddress] = goal.first.data['formatted_address']  
+  end
+  
+  respond_with res
 end
 
 MyApp.add_route('POST', '/racingTracks/{id}/positions', 'resourcePath' => '/Default',
@@ -162,13 +212,15 @@ MyApp.add_route('POST', '/racingTracks/{id}/positions', 'resourcePath' => '/Defa
   cross_origin
   content_type 'application/json'
 
+  $myLogger.debug { "Incoming Request to POST /racingTracks/{id}/positions"}
+
   is_id_valid, int_id = validate_int(id)
   return err(400, 'Parameter not valid.') unless is_id_valid
 
   begin
     body = JSON.parse(request.body.read)
   rescue JSON::ParserError, ArgumentError => e
-    puts(e)
+    $myLogger.error {"API Error: #{e.message}"}
     return err(400, 'Parameter not valid.')
   end
 
@@ -198,6 +250,7 @@ def validate_int(id)
 end
 
 def err(code, message)
+  $myLogger.info { "Failed Request: #{code} - #{message}"}
   status code
   {
       errorModel: {
@@ -208,6 +261,7 @@ def err(code, message)
 end
 
 def error_pl(payload)
+  $myLogger.info { "Failed Request: #{payload[:errorModel][:code]} - #{payload[:errorModel][:message]}"}
   status payload[:errorModel][:code]
   payload
 end
